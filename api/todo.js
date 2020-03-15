@@ -7,7 +7,8 @@ AWS.config.setPromisesDependency(require('bluebird'));
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
-module.exports.hello = async event => {
+module.exports.hello = async (event, context) => {
+  console.log('hello', context)
   return {
     statusCode: 200,
     body: JSON.stringify(
@@ -19,9 +20,6 @@ module.exports.hello = async event => {
       2
     ),
   };
-
-  // Use this code if you don't use the http event with the LAMBDA-PROXY integration
-  // return { message: 'Go Serverless v1.0! Your function executed successfully!', event };
 };
 
 module.exports.list = async (event, context, callback) => {
@@ -76,10 +74,17 @@ const listTodos = (status) => {
  * Submit/Create new task
  */
 module.exports.submit = async (event, context, callback) => {
-  const taskName = event.body.taskName;
+  console.log('submit', event)
+  const body = JSON.parse(event.body);
+  const taskName = body.taskName
   if (typeof taskName !== 'string') {
     console.error('Validation failed');
-    callback(new Error('Validation error'));
+    callback(null, {
+      statusCode: 400,
+      body: {
+        message: 'Validation error'
+      } 
+    });
     return;
   }
 
