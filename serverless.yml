@@ -85,6 +85,7 @@ functions:
       - http:
           path: todos
           method: get
+          cors: true
           authorizer:
             type: COGNITO_USER_POOLS
             authorizerId:
@@ -92,7 +93,7 @@ functions:
           request:
             parameters:
               querystrings:
-                url: true      
+                url: true
   submitTask:
     handler: api/todo.submit
     memorySize: 128
@@ -100,6 +101,7 @@ functions:
       - http:
           path: todos
           method: post
+          cors: true
           authorizer:
             type: COGNITO_USER_POOLS
             authorizerId:
@@ -110,7 +112,8 @@ functions:
     events:
       - http:
           path: todos/{taskId}/status/{status}
-          method: put          
+          method: put         
+          cors: true 
           authorizer:
             type: COGNITO_USER_POOLS
             authorizerId:
@@ -122,6 +125,7 @@ functions:
       - http:
           path: todos/clear-completed
           method: post         
+          cors: true
           authorizer:
             type: COGNITO_USER_POOLS
             authorizerId:

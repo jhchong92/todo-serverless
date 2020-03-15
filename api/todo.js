@@ -34,6 +34,10 @@ module.exports.list = async (event, context, callback) => {
     console.log('todos', todos)
     callback(null, {
       statusCode: 200,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+      },
       body: JSON.stringify(
         {
           message: 'Successz',
