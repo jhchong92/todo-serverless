@@ -24,6 +24,54 @@ module.exports.hello = async event => {
   // return { message: 'Go Serverless v1.0! Your function executed successfully!', event };
 };
 
+module.exports.list = async (event, context, callback) => {
+  let status = null;
+  if (event.queryStringParameters) {
+    status = event.queryStringParameters.status
+  }
+  try {
+    
+    const todos = await listTodos(status)
+    console.log('todos', todos)
+    callback(null, {
+      statusCode: 200,
+      body: JSON.stringify(
+        {
+          message: 'Successz',
+          todos: todos.Items
+        }
+      )
+    })
+
+  }catch (err) {
+    console.log(err)
+    callback(null, {
+      statusCode: 500,
+      body: JSON.stringify(
+        {
+          message: 'Failed to list todos',
+        }
+      )
+    })
+  }
+}
+
+const listTodos = (status) => {
+  const payload = {
+    TableName: process.env.TODO_TABLE,
+  }
+  if (status) {
+    Object.assign(payload, {
+      FilterExpression: 'status = :s',
+      ExpressionAttributeValues: {
+        ':s': { 'N': status }
+      }
+    })
+  }
+  return dynamoDb.scan(payload).promise()
+  .then (result => result)
+}
+
 /**
  * Submit/Create new task
  */
@@ -134,4 +182,36 @@ const updateTaskStatus = (taskId, status) => {
       console.log('update dynamo', res)
       return res.Attributes
     });
+}
+
+/**
+ * Clear all completed task
+ */
+module.exports.clearCompleted = async (event, context, callback) => {
+  // get all user's tasks
+  const tasks = await listTodos(2);
+
+  try {
+    const update = await Promise.all(tasks.map((task) => updateTaskStatus(task.id, 3)))
+    // const task = await updateTaskStatus(taskId, status)
+    console.log('done!', update)
+    callback(null, {
+      statusCode: 200,
+      body: JSON.stringify(
+        {
+          message: 'Submitted',
+        }
+      )
+    })
+  }catch (err) {
+    console.log(err)
+    callback(null, {
+      statusCode: 500,
+      body: JSON.stringify(
+        {
+          message: 'Unable to update task',
+        }
+      )
+    })
+  }
 }
