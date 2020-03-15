@@ -85,10 +85,14 @@ functions:
       - http:
           path: todos
           method: get
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
           request:
             parameters:
               querystrings:
-                url: true            
+                url: true      
   submitTask:
     handler: api/todo.submit
     memorySize: 128
@@ -96,6 +100,10 @@ functions:
       - http:
           path: todos
           method: post
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
   updateTaskStatus:
     handler: api/todo.update
     memorySize: 128
@@ -103,13 +111,21 @@ functions:
       - http:
           path: todos/{taskId}/status/{status}
           method: put          
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer
   clearCompleted:
     handler: api/todo.clearCompleted
     memorySize: 128
     events:
       - http:
           path: todos/clear-completed
-          method: post          
+          method: post         
+          authorizer:
+            type: COGNITO_USER_POOLS
+            authorizerId:
+              Ref: ApiGatewayAuthorizer 
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
 #    Check the event documentation for details
