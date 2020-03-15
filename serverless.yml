@@ -35,6 +35,7 @@ provider:
         - dynamodb:Scan
         - dynamodb:GetItem
         - dynamodb:PutItem
+        - dynamodb:UpdateItem
       Resource: "*"
 
 # you can add statements to the Lambda function's IAM Role here

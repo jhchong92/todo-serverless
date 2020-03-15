@@ -38,7 +38,7 @@ module.exports.list = async (event, context, callback) => {
       body: JSON.stringify(
         {
           message: 'Successz',
-          todos: todos.Items
+          todos: todos
         }
       )
     })
@@ -62,14 +62,14 @@ const listTodos = (status) => {
   }
   if (status) {
     Object.assign(payload, {
-      FilterExpression: 'status = :s',
+      FilterExpression: 'task_status = :s',
       ExpressionAttributeValues: {
-        ':s': { 'N': status }
+        ':s': status
       }
     })
   }
   return dynamoDb.scan(payload).promise()
-  .then (result => result)
+  .then (result => result.Items)
 }
 
 /**
@@ -190,7 +190,7 @@ const updateTaskStatus = (taskId, status) => {
 module.exports.clearCompleted = async (event, context, callback) => {
   // get all user's tasks
   const tasks = await listTodos(2);
-
+  console.log('tasks list', tasks)
   try {
     const update = await Promise.all(tasks.map((task) => updateTaskStatus(task.id, 3)))
     // const task = await updateTaskStatus(taskId, status)
