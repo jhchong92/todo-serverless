@@ -40,7 +40,7 @@ module.exports.list = async (event, context, callback) => {
       },
       body: JSON.stringify(
         {
-          message: 'Successz',
+          message: 'Success',
           todos: todos
         }
       )
@@ -54,7 +54,11 @@ module.exports.list = async (event, context, callback) => {
         {
           message: 'Failed to list todos',
         }
-      )
+      ),
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+      },
     })
   }
 }
@@ -110,7 +114,11 @@ module.exports.submit = async (event, context, callback) => {
           message: 'Success',
           data: task
         }
-      )
+      ),
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+      },
     })
   }catch (err) {
     console.log(err)
@@ -168,7 +176,11 @@ module.exports.update = async (event, context, callback) => {
           message: 'Success',
           data: task
         }
-      )
+      ),
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+      },
     })
   }catch (err) {
     // handle condition check failed (invalid userId)
@@ -179,7 +191,11 @@ module.exports.update = async (event, context, callback) => {
         {
           message: 'Unable to update task',
         }
-      )
+      ),
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+      },
     })
   }
 }
@@ -225,7 +241,11 @@ module.exports.clearCompleted = async (event, context, callback) => {
           message: 'Submitted',
           data: update
         }
-      )
+      ),
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+      },
     })
   }catch (err) {
     console.log(err)
@@ -235,7 +255,11 @@ module.exports.clearCompleted = async (event, context, callback) => {
         {
           message: 'Unable to update task',
         }
-      )
+      ),
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Credentials': true,
+      },
     })
   }
 }
