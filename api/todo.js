@@ -64,7 +64,7 @@ const listTodos = (status) => {
     Object.assign(payload, {
       FilterExpression: 'task_status = :s',
       ExpressionAttributeValues: {
-        ':s': status
+        ':s': parseInt(status)
       }
     })
   }
@@ -173,7 +173,7 @@ const updateTaskStatus = (taskId, status) => {
     },
     UpdateExpression: 'SET task_status = :t',
     ExpressionAttributeValues: {
-      ':t' : status
+      ':t' : parseInt(status)
     },
     ReturnValues: "ALL_NEW"
   }
