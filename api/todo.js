@@ -161,8 +161,8 @@ module.exports.update = async (event, context, callback) => {
       statusCode: 200,
       body: JSON.stringify(
         {
-          message: 'Submitted',
-          taskId: task.id
+          message: 'Success',
+          data: task
         }
       )
     })
@@ -207,10 +207,11 @@ const updateTaskStatus = (userId, taskId, status) => {
  */
 module.exports.clearCompleted = async (event, context, callback) => {
   // get all user's tasks
-  const tasks = await listTodos(2);
+  const userId = event.requestContext.authorizer.claims.sub
+  const tasks = await listTodos(userId, 2);
   console.log('tasks list', tasks)
   try {
-    const update = await Promise.all(tasks.map((task) => updateTaskStatus(task.id, 3)))
+    const update = await Promise.all(tasks.map((task) => updateTaskStatus(userId, task.id, 3)))
     // const task = await updateTaskStatus(taskId, status)
     console.log('done!', update)
     callback(null, {
@@ -218,6 +219,7 @@ module.exports.clearCompleted = async (event, context, callback) => {
       body: JSON.stringify(
         {
           message: 'Submitted',
+          data: update
         }
       )
     })
