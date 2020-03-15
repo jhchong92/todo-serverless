@@ -154,7 +154,8 @@ module.exports.update = async (event, context, callback) => {
   // TODO: validate task and status
 
   try {
-    const task = await updateTaskStatus(taskId, status)
+    const userId = event.requestContext.authorizer.claims.sub
+    const task = await updateTaskStatus(userId, taskId, status)
     console.log('done!', task)
     callback(null, {
       statusCode: 200,
@@ -166,6 +167,7 @@ module.exports.update = async (event, context, callback) => {
       )
     })
   }catch (err) {
+    // handle condition check failed (invalid userId)
     console.log(err)
     callback(null, {
       statusCode: 500,
@@ -178,7 +180,7 @@ module.exports.update = async (event, context, callback) => {
   }
 }
 
-const updateTaskStatus = (taskId, status) => {
+const updateTaskStatus = (userId, taskId, status) => {
   console.log('updateTask', taskId, status)
   const payload = {
     TableName: process.env.TODO_TABLE,
@@ -186,8 +188,10 @@ const updateTaskStatus = (taskId, status) => {
       'id': taskId
     },
     UpdateExpression: 'SET task_status = :t',
+    ConditionExpression: 'user_id = :userId',
     ExpressionAttributeValues: {
-      ':t' : parseInt(status)
+      ':t' : parseInt(status),
+      ':userId': userId
     },
     ReturnValues: "ALL_NEW"
   }
