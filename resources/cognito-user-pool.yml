@@ -20,3 +20,15 @@ Resources:
       GenerateSecret: False
       UserPoolId:
         Ref: CognitoUserPool   
+ApiGatewayAuthorizer:
+  DependsOn:
+    - ApiGatewayRestApi
+  Type: AWS::ApiGateway::Authorizer
+  Properties:
+    Name: cognito-authorizer
+    IdentitySource: method.request.header.Authorization
+    RestApiId:
+      Ref: ApiGatewayRestApi
+    Type: COGNITO_USER_POOLS
+    ProviderARNs:
+      - Fn::GetAtt: [CognitoUserPool, Arn]        

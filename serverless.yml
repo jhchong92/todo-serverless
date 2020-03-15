@@ -74,6 +74,10 @@ functions:
      - http:
          path: todo/hello
          method: get
+         authorizer:
+          type: COGNITO_USER_POOLS
+          authorizerId:
+            Ref: ApiGatewayAuthorizer
   listTodos:
     handler: api/todo.list
     memorySize: 128
