@@ -68,7 +68,18 @@ provider:
 
 functions:
   hello:
-    handler: handler.hello
+    handler: api/todo.hello
+    events:
+     - http:
+         path: todo/hello
+         method: get
+  submitTask:
+    handler: api/todo.submit
+    memorySize: 128
+    events:
+      - http:
+          path: todos
+          method: post
 #    The following are a few example events you can configure
 #    NOTE: Please make sure to change your handler code to work with those events
 #    Check the event documentation for details
