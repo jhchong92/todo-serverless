@@ -79,3 +79,59 @@ const createTask = (taskName) => {
     task_status: 1
   }
 }
+
+/**
+ * Update task status
+ */
+
+module.exports.update = async (event, context, callback) => {
+  console.log('update', event)
+  const taskId = event.pathParameters.taskId;
+  const status = event.pathParameters.status;
+
+  // TODO: validate task and status
+
+  try {
+    const task = await updateTaskStatus(taskId, status)
+    console.log('done!', task)
+    callback(null, {
+      statusCode: 200,
+      body: JSON.stringify(
+        {
+          message: 'Submitted',
+          taskId: task.id
+        }
+      )
+    })
+  }catch (err) {
+    console.log(err)
+    callback(null, {
+      statusCode: 500,
+      body: JSON.stringify(
+        {
+          message: 'Unable to update task',
+        }
+      )
+    })
+  }
+}
+
+const updateTaskStatus = (taskId, status) => {
+  console.log('updateTask', taskId, status)
+  const payload = {
+    TableName: process.env.TODO_TABLE,
+    Key: {
+      'id': taskId
+    },
+    UpdateExpression: 'SET task_status = :t',
+    ExpressionAttributeValues: {
+      ':t' : status
+    },
+    ReturnValues: "ALL_NEW"
+  }
+  return dynamoDb.update(payload).promise()
+    .then((res) => {
+      console.log('update dynamo', res)
+      return res.Attributes
+    });
+}
