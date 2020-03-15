@@ -158,20 +158,20 @@ functions:
 #       Description: "Description for the output"
 #       Value: "Some output value"
 resources:
-  Resources:
-    CandidatesDynamoDbTable:
-      Type: 'AWS::DynamoDB::Table'
-      DeletionPolicy: Retain
-      Properties:
-        AttributeDefinitions:
-          -
-            AttributeName: "id"
-            AttributeType: "S"   
-        KeySchema:
-          -
-            AttributeName: "id"
-            KeyType: "HASH"
-        BillingMode: PAY_PER_REQUEST
-        StreamSpecification:
-          StreamViewType: "NEW_AND_OLD_IMAGES"
-        TableName: ${self:provider.environment.TODO_TABLE}
+  - ${file(resources/cognito-user-pool.yml)}         
+  #   CandidatesDynamoDbTable:
+  #     Type: 'AWS::DynamoDB::Table'
+  #     DeletionPolicy: Retain
+  #     Properties:
+  #       AttributeDefinitions:
+  #         -
+  #           AttributeName: "id"
+  #           AttributeType: "S"   
+  #       KeySchema:
+  #         -
+  #           AttributeName: "id"
+  #           KeyType: "HASH"
+  #       BillingMode: PAY_PER_REQUEST
+  #       StreamSpecification:
+  #         StreamViewType: "NEW_AND_OLD_IMAGES"
+  #       TableName: ${self:provider.environment.TODO_TABLE}
