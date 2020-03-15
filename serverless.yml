@@ -73,6 +73,17 @@ functions:
      - http:
          path: todo/hello
          method: get
+  listTodos:
+    handler: api/todo.list
+    memorySize: 128
+    events:
+      - http:
+          path: todos
+          method: get
+          request:
+            parameters:
+              querystrings:
+                url: true            
   submitTask:
     handler: api/todo.submit
     memorySize: 128
