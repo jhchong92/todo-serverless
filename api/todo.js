@@ -40,10 +40,21 @@ const impl = {
     console.log(`${method} - dynamo error ${err}`)
     return impl.serverError('Something went wrong at server')
   },
+  validationError: () => {
+    return impl.response(400, {
+      message: 'Validation error'
+    })
+  },
   successTodos: (todos) => {
     return impl.response(200, {
       message: 'Success',
       todos
+    })
+  },
+  successTodo: (todo) => {
+    return impl.response(200, {
+      message: 'Success',
+      todo
     })
   }
 }
@@ -61,6 +72,23 @@ const api = {
     }).catch((error) => {
       callback(null, impl.dynamoError('LIST', error))
     })
+  }, 
+  submit: (event, context, callback) => {
+    const body = JSON.parse(event.body);
+    const taskName = body.taskName
+    
+    if (typeof taskName !== 'string') {
+      callback(null, impl.validationError());
+    }
+    const userId = event.requestContext.authorizer.claims.sub
+    submitTask(createTask(taskName, userId))
+    .then((todo) => {
+      callback(null, impl.successTodo(todo))
+    })
+    .catch((error) => {
+      callback(null, impl.dynamoError('SUBMIT', error))
+    })
+
   }
 }
 
@@ -86,53 +114,6 @@ const listTodos = (userId, status) => {
   .then (result => result.Items)
 }
 
-/**
- * Submit/Create new task
- */
-module.exports.submit = async (event, context, callback) => {
-  const body = JSON.parse(event.body);
-  const taskName = body.taskName
-  
-  if (typeof taskName !== 'string') {
-    console.error('Validation failed');
-    callback(null, {
-      statusCode: 400,
-      body: {
-        message: 'Validation error'
-      } 
-    });
-    return;
-  }
-
-  try {
-    const userId = event.requestContext.authorizer.claims.sub
-    const task = await submitTask(createTask(taskName, userId))
-    console.log('done!', task)
-    callback(null, {
-      statusCode: 200,
-      body: JSON.stringify(
-        {
-          message: 'Success',
-          data: task
-        }
-      ),
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
-      },
-    })
-  }catch (err) {
-    console.log(err)
-    callback(null, {
-      statusCode: 500,
-      body: JSON.stringify(
-        {
-          message: 'Unable to submit new task',
-        }
-      )
-    })
-  }
-}
 
 const submitTask = task => {
   console.log('Submitting task');
