@@ -22,43 +22,44 @@ module.exports.hello = async (event, context) => {
   };
 };
 
-module.exports.list = async (event, context, callback) => {
-  console.log('list', event)
-  let status = null;
-  if (event.queryStringParameters) {
-    status = event.queryStringParameters.status
-  }
-  try {
-    const userId = event.requestContext.authorizer.claims.sub
-    const todos = await listTodos(userId, status)
-    console.log('todos', todos)
-    callback(null, {
-      statusCode: 200,
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
-      },
-      body: JSON.stringify(
-        {
-          message: 'Success',
-          todos: todos
-        }
-      )
+const impl = {
+  response: (statusCode, body) => ({
+    statusCode,
+    headers: {
+      'Access-Control-Allow-Origin': '*',
+      'Access-Control-Allow-Credentials': true,
+    },
+    body
+  }),
+  serverError: (message) => {
+    return impl.response(500, {
+      message 
     })
+  },
+  dynamoError: (method, err) => {
+    console.log(`${method} - dynamo error ${err}`)
+    return impl.serverError('Something went wrong at server')
+  },
+  successTodos: (todos) => {
+    return impl.response(200, {
+      message: 'Success',
+      todos
+    })
+  }
+}
 
-  }catch (err) {
-    console.log(err)
-    callback(null, {
-      statusCode: 500,
-      body: JSON.stringify(
-        {
-          message: 'Failed to list todos',
-        }
-      ),
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
-      },
+const api = {
+  list: (event, context, callback) => {
+    console.log('list', event)
+    let status = null;
+    if (event.queryStringParameters) {
+      status = event.queryStringParameters.status
+    }
+    const userId = event.requestContext.authorizer.claims.sub
+    listTodos(userId, status).then((todos) => {
+      callback(null, impl.successTodos(todos))
+    }).catch((error) => {
+      callback(null, impl.dynamoError('LIST', error))
     })
   }
 }
@@ -262,4 +263,8 @@ module.exports.clearCompleted = async (event, context, callback) => {
       },
     })
   }
+}
+
+module.exports = {
+  list: api.list
 }
