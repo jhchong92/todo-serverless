@@ -31,31 +31,37 @@ const impl = {
     },
     body
   }),
+  successResponse: (message) => {
+    return impl.response(200, JSON.stringify({
+      message
+    }))
+  },
   serverError: (message) => {
-    return impl.response(500, {
+    return impl.response(500, JSON.stringify({
       message 
-    })
+    }))
   },
   dynamoError: (method, err) => {
     console.log(`${method} - dynamo error ${err}`)
     return impl.serverError('Something went wrong at server')
   },
   validationError: () => {
-    return impl.response(400, {
+    return impl.response(400, JSON.stringify({
       message: 'Validation error'
-    })
+    }))
   },
   successTodos: (todos) => {
-    return impl.response(200, {
+
+    return impl.response(200, JSON.stringify({
       message: 'Success',
       todos
-    })
+    }))
   },
   successTodo: (todo) => {
-    return impl.response(200, {
+    return impl.response(200, JSON.stringify({
       message: 'Success',
-      todo
-    })
+      data: todo
+    }))
   }
 }
 
@@ -67,9 +73,12 @@ const api = {
       status = event.queryStringParameters.status
     }
     const userId = event.requestContext.authorizer.claims.sub
+    console.log('userId', userId)
     listTodos(userId, status).then((todos) => {
+      console.log('listTodos results', todos)
       callback(null, impl.successTodos(todos))
     }).catch((error) => {
+      console.log('error', error)
       callback(null, impl.dynamoError('LIST', error))
     })
   }, 
@@ -88,11 +97,37 @@ const api = {
     .catch((error) => {
       callback(null, impl.dynamoError('SUBMIT', error))
     })
+  },
+  update: (event, context, callback) => {
+    const taskId = event.pathParameters.taskId;
+    const status = event.pathParameters.status;
+    
+    const userId = event.requestContext.authorizer.claims.sub
+    updateTaskStatus(userId, taskId, status)
+    .then((todo) => {
+      callback(null, impl.successTodo(todo))
+    })
+    .catch((err) => {
+      callback(null, impl.dynamoError('UPDATE', err))
+    })
+  },
+  clearCompleted: (event, context, callback) => {
+    const userId = event.requestContext.authorizer.claims.sub
+    listTodos(userId, 2).then((tasks) => tasks.map((task) => updateTaskStatus(userId, task.id, 3)))
+    .then((tasks) => {
+      console.log('tasks', tasks)
+      callback(null, impl.successResponse('Success'))
 
+    })
+    .catch((err) => {
+      callback(null, impl.serverError(err))
+    })
   }
 }
 
 const listTodos = (userId, status) => {
+  console.log('listTodos', userId, status);
+  
   const payload = {
     TableName: process.env.TODO_TABLE,
   }
@@ -136,51 +171,6 @@ const createTask = (taskName, userId) => {
   }
 }
 
-/**
- * Update task status
- */
-
-module.exports.update = async (event, context, callback) => {
-  console.log('update', event)
-  const taskId = event.pathParameters.taskId;
-  const status = event.pathParameters.status;
-
-  // TODO: validate task and status
-
-  try {
-    const userId = event.requestContext.authorizer.claims.sub
-    const task = await updateTaskStatus(userId, taskId, status)
-    console.log('done!', task)
-    callback(null, {
-      statusCode: 200,
-      body: JSON.stringify(
-        {
-          message: 'Success',
-          data: task
-        }
-      ),
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
-      },
-    })
-  }catch (err) {
-    // handle condition check failed (invalid userId)
-    console.log(err)
-    callback(null, {
-      statusCode: 500,
-      body: JSON.stringify(
-        {
-          message: 'Unable to update task',
-        }
-      ),
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
-      },
-    })
-  }
-}
 
 const updateTaskStatus = (userId, taskId, status) => {
   console.log('updateTask', taskId, status)
@@ -204,48 +194,9 @@ const updateTaskStatus = (userId, taskId, status) => {
     });
 }
 
-/**
- * Clear all completed task
- */
-module.exports.clearCompleted = async (event, context, callback) => {
-  // get all user's tasks
-  const userId = event.requestContext.authorizer.claims.sub
-  const tasks = await listTodos(userId, 2);
-  console.log('tasks list', tasks)
-  try {
-    const update = await Promise.all(tasks.map((task) => updateTaskStatus(userId, task.id, 3)))
-    // const task = await updateTaskStatus(taskId, status)
-    console.log('done!', update)
-    callback(null, {
-      statusCode: 200,
-      body: JSON.stringify(
-        {
-          message: 'Submitted',
-          data: update
-        }
-      ),
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
-      },
-    })
-  }catch (err) {
-    console.log(err)
-    callback(null, {
-      statusCode: 500,
-      body: JSON.stringify(
-        {
-          message: 'Unable to update task',
-        }
-      ),
-      headers: {
-        'Access-Control-Allow-Origin': '*',
-        'Access-Control-Allow-Credentials': true,
-      },
-    })
-  }
-}
-
 module.exports = {
-  list: api.list
+  list: api.list,
+  submit: api.submit,
+  update: api.update,
+  clearCompleted: api.clearCompleted
 }
