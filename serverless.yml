@@ -184,7 +184,26 @@ functions:
 resources:
   - ${file(resources/cognito-user-pool.yml)}        
   - ${file(resources/api-authorizer.yml)}        
-   
+  - Resources:
+      # Tables
+      ToDo:
+        Type: AWS::DynamoDB::Table
+        Properties:
+          AttributeDefinitions:
+            - AttributeName: id
+              AttributeType: S
+            - AttributeName: userId
+              AttributeType: S
+            - AttributeName: task
+              AttributeType: S
+            - AttributeName: status
+              AttributeType: N
+          KeySchema:
+            - AttributeName: id
+              KeyType: HASH
+          BillingMode: PAY_PER_REQUEST
+          TableName: ${opt:stage}-ToDo
+
   #   CandidatesDynamoDbTable:
   #     Type: 'AWS::DynamoDB::Table'
   #     DeletionPolicy: Retain
