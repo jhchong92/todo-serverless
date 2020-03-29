@@ -31,15 +31,13 @@ provider:
   region: ap-southeast-1
   environment:
     TODO_TABLE: ${opt:stage}-ToDo
-  iamRoleStatements:
-    - Effect: Allow
-      Action:
-        - dynamodb:Query
-        - dynamodb:Scan
-        - dynamodb:GetItem
-        - dynamodb:PutItem
-        - dynamodb:UpdateItem
-      Resource: "*"
+  # iamRoleStatements:
+  #   - Effect: Allow
+  #     Action:
+  #       - dynamodb:Query
+  #       - dynamodb:GetItem
+  #       - dynamodb:UpdateItem
+  #     Resource: "*"
 
 # you can add statements to the Lambda function's IAM Role here
 #  iamRoleStatements:
@@ -85,7 +83,7 @@ functions:
     handler: api/todo.list
     memorySize: 128
     role:
-      Fn::GetAtt: [ ]
+      Fn::GetAtt: [ ToDoReader, Arn ]
     events:
       - http:
           path: todos
@@ -102,6 +100,8 @@ functions:
   submitTask:
     handler: api/todo.submit
     memorySize: 128
+    role:
+      Fn::GetAtt: [ ToDoWriter, Arn ]
     events:
       - http:
           path: todos
@@ -114,6 +114,8 @@ functions:
   updateTaskStatus:
     handler: api/todo.update
     memorySize: 128
+    role: 
+      Fn::GetAtt: [ ToDoWriter, Arn ]
     events:
       - http:
           path: todos/{taskId}/status/{status}
@@ -126,6 +128,8 @@ functions:
   clearCompleted:
     handler: api/todo.clearCompleted
     memorySize: 128
+    role: 
+      Fn::GetAtt: [ ToDoReaderWriter, Arn ]
     events:
       - http:
           path: todos/clear-completed
@@ -237,6 +241,59 @@ resources:
                     Resource:
                       Fn::Join:
                         - '/'
-                        - - 'arn:aws:dynamodb:${self:custom.private.regionId}:${self:custom.private.accountId}:table'
+                        - - 'arn:aws:dynamodb:${self:custom.private.region}:${self:custom.private.accountId}:table'
+                          - Ref: ToDo
+      ToDoWriter:
+        Type: AWS::IAM::Role
+        Properties:
+          Path: /
+          RoleName: ${opt:stage}ToDoWriter
+          AssumeRolePolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sts:AssumeRole
+                Principal:
+                  Service: lambda.amazonaws.com
+          Policies:
+            - PolicyName: ReadFromToDo
+              PolicyDocument: 
+                Version: '2012-10-17'
+                Statement:
+                  - Effect: Allow
+                    Action: 
+                      - 'dynamodb:PutItem'
+                      - 'dynamodb:UpdateItem'
+                    Resource:
+                      Fn::Join:
+                        - '/'
+                        - - 'arn:aws:dynamodb:${self:custom.private.region}:${self:custom.private.accountId}:table'
+                          - Ref: ToDo
+      ToDoReaderWriter:
+        Type: AWS::IAM::Role
+        Properties:
+          Path: /
+          RoleName: ${opt:stage}ToDoReaderWriter
+          AssumeRolePolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sts:AssumeRole
+                Principal:
+                  Service: lambda.amazonaws.com
+          Policies:
+            - PolicyName: ReadFromToDo
+              PolicyDocument: 
+                Version: '2012-10-17'
+                Statement:
+                  - Effect: Allow
+                    Action: 
+                      - 'dynamodb:Scan'
+                      - 'dynamodb:UpdateItem'
+                      - 'dynamodb:PutItem'
+                    Resource:
+                      Fn::Join:
+                        - '/'
+                        - - 'arn:aws:dynamodb:${self:custom.private.region}:${self:custom.private.accountId}:table'
                           - Ref: ToDo
 
