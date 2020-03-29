@@ -11,7 +11,7 @@
 #
 # Happy Coding!
 
-service: todo
+service: todo-test
 # app and org for use with dashboard.serverless.com
 app: todo-app
 org: jhchong92
@@ -19,6 +19,9 @@ org: jhchong92
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
 # frameworkVersion: "=X.X.X"
+
+custom:
+  private: ${file(./private.yml)}
 
 provider:
   name: aws
@@ -81,6 +84,8 @@ functions:
   listTodos:
     handler: api/todo.list
     memorySize: 128
+    role:
+      Fn::GetAtt: [ ]
     events:
       - http:
           path: todos
@@ -192,31 +197,46 @@ resources:
           AttributeDefinitions:
             - AttributeName: id
               AttributeType: S
-            - AttributeName: userId
+            - AttributeName: user
               AttributeType: S
-            - AttributeName: task
-              AttributeType: S
-            - AttributeName: status
-              AttributeType: N
           KeySchema:
             - AttributeName: id
               KeyType: HASH
           BillingMode: PAY_PER_REQUEST
           TableName: ${opt:stage}-ToDo
+          GlobalSecondaryIndexes:
+            - IndexName: TasksByUser
+              KeySchema: 
+                - AttributeName: user
+                  KeyType: HASH
+              Projection:
+                ProjectionType: INCLUDE
+                NonKeyAttributes:
+                  - id
+              # BillingMode: PAY_PER_REQUEST
+      ToDoReader:
+        Type: AWS::IAM::Role
+        Properties:
+          Path: /
+          RoleName: ${opt:stage}ToDoReader
+          AssumeRolePolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action: sts:AssumeRole
+                Principal:
+                  Service: lambda.amazonaws.com
+          Policies:
+            - PolicyName: ReadFromToDo
+              PolicyDocument: 
+                Version: '2012-10-17'
+                Statement:
+                  - Effect: Allow
+                    Action: 
+                      - 'dynamodb:Scan'
+                    Resource:
+                      Fn::Join:
+                        - '/'
+                        - - 'arn:aws:dynamodb:${self:custom.private.regionId}:${self:custom.private.accountId}:table'
+                          - Ref: ToDo
 
-  #   CandidatesDynamoDbTable:
-  #     Type: 'AWS::DynamoDB::Table'
-  #     DeletionPolicy: Retain
-  #     Properties:
-  #       AttributeDefinitions:
-  #         -
-  #           AttributeName: "id"
-  #           AttributeType: "S"   
-  #       KeySchema:
-  #         -
-  #           AttributeName: "id"
-  #           KeyType: "HASH"
-  #       BillingMode: PAY_PER_REQUEST
-  #       StreamSpecification:
-  #         StreamViewType: "NEW_AND_OLD_IMAGES"
-  #       TableName: ${self:provider.environment.TODO_TABLE}
