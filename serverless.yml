@@ -27,7 +27,7 @@ provider:
   # stage: dev
   region: ap-southeast-1
   environment:
-    TODO_TABLE: ${self:service}-${opt:stage, self:provider.stage}
+    TODO_TABLE: ${opt:stage}-ToDo
   iamRoleStatements:
     - Effect: Allow
       Action:
