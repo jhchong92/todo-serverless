@@ -1,0 +1,24 @@
+{
+  "name": "todo-serverless",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "dependencies": {
+    "bluebird": "^3.7.2",
+    "uuid": "^7.0.3",
+    "ajv": "^6.12.2"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/jhchong92/todo-serverless.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/jhchong92/todo-serverless/issues"
+  },
+  "homepage": "https://github.com/jhchong92/todo-serverless#readme"
+}

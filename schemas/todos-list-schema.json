@@ -1,0 +1,25 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "self": {
+    "vendor": "com.jh",
+    "name": "todos/list",
+    "version": "1.0.0"
+  },
+  "type": "object",
+  "properties": {
+    "path": { "type": "string", "pattern": "^/todos$"},
+    "httpMethod": { "type": "string", "pattern": "^GET$"},
+    "queryStringParameters": {
+      "type": [ "object", "null" ],
+      "properties": {
+        "status" : { "type": "string", "pattern": "^\\d+$" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "path",
+    "httpMethod"
+  ],
+  "additionalProperties": true
+}

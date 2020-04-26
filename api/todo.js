@@ -1,11 +1,24 @@
 'use strict';
 
+const AJV = require('ajv');
 const uuid = require('uuid');
 const AWS = require('aws-sdk'); 
 
 AWS.config.setPromisesDependency(require('bluebird'));
 
 const dynamoDb = new AWS.DynamoDB.DocumentClient();
+
+const makeSchemaId = (schema) => `${schema.self.vendor}/${schema.self.name}/${schema.self.version}`
+
+const todoCreateSchema = require('../schemas/todo-create-schema.json')
+const todoCreateSchemaId = makeSchemaId(todoCreateSchema)
+
+const todosListSchema = require('../schemas/todos-list-schema.json')
+const todosListSchemaId = makeSchemaId(todosListSchema)
+
+const ajv = new AJV()
+ajv.addSchema(todoCreateSchema, todoCreateSchemaId)
+ajv.addSchema(todosListSchema, todosListSchemaId)
 
 module.exports.hello = async (event, context) => {
   console.log('hello', context)
@@ -28,6 +41,7 @@ const impl = {
     headers: {
       'Access-Control-Allow-Origin': '*',
       'Access-Control-Allow-Credentials': true,
+      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, POST, DELETE, OPTIONS'
     },
     body
   }),
@@ -50,6 +64,11 @@ const impl = {
       message: 'Validation error'
     }))
   },
+  clientError: (method, schemaId, ajvErrors, event) => {
+    return impl.response(400, 
+      `${method} Invalid Request could not validate request to schema ${schemaId}. Errors: '${ajvErrors}' found in event: '${JSON.stringify(event)}' `  
+    )
+  },
   successTodos: (todos) => {
 
     return impl.response(200, JSON.stringify({
@@ -67,6 +86,11 @@ const impl = {
 
 const api = {
   list: (event, context, callback) => {
+    console.log('abc');
+    if (!ajv.validate(todosListSchemaId, event)) {
+      callback(null, impl.clientError('LIST_TODO', todosListSchemaId, ajv.errorsText(), event))
+      return
+    }
     console.log('list', event)
     let status = null;
     if (event.queryStringParameters) {
@@ -83,6 +107,10 @@ const api = {
     })
   }, 
   submit: (event, context, callback) => {
+    if (!ajv.validate(todoCreateSchemaId, event)) {
+      callback(null, impl.clientError('SUBMIT_TODO', todoCreateSchemaId, ajv.errorsText(), event))
+      return;
+    }
     const body = JSON.parse(event.body);
     const taskName = body.taskName
     

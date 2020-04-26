@@ -11,7 +11,7 @@
 #
 # Happy Coding!
 
-service: todo-test
+service: todo
 # app and org for use with dashboard.serverless.com
 app: todo-app
 org: jhchong92
@@ -30,6 +30,14 @@ provider:
   region: ap-southeast-1
   environment:
     TODO_TABLE: ${opt:stage}-ToDo
+  # iamRoleStatements:
+  #   - Effect: Allow
+  #     Action:
+  #       - 'logs:CreateLogGroup'
+  #       - 'logs:CreateLogStream'
+  #       - 'logs:PutLogEvents'
+  #       - 'logs:DescribeLogStreams'
+  #     Resource: 'arn:aws:logs:${self:custom.private.region}:${self:custom.private.accountId}:log-group:/aws/lambda/${self:service}-${opt:stage}-*'
 
 functions:
   hello:
@@ -106,6 +114,30 @@ resources:
   - ${file(resources/cognito-user-pool.yml)}        
   - ${file(resources/api-authorizer.yml)}        
   - Resources:
+      LoggingPermissionPolicy:
+        Type: AWS::IAM::Policy
+        Properties:
+          PolicyName: LoggingPermission
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - 'logs:CreateLogGroup'
+                  - 'logs:CreateLogStream'
+                  - 'logs:PutLogEvents'
+                Resource: 'arn:aws:logs:${self:custom.private.region}:${self:custom.private.accountId}:log-group:/aws/lambda/${self:service}-${opt:stage}-*'
+          Roles:
+            - Ref: ToDoReader
+            - Ref: ToDoReaderWriter
+            - Ref: ToDoWriter
+
+      # Logs
+      # ToDoLogGroup:
+      #   Type: AWS::Logs::LogGroup
+      #   Properties:
+      #     LogGroupName: /aws/lambda/${self:service}-${opt:stage}-listTodos
+      #     RetentionInDays: 3
       # Tables
       ToDo:
         Type: AWS::DynamoDB::Table
@@ -143,6 +175,25 @@ resources:
                 Principal:
                   Service: lambda.amazonaws.com
           Policies:
+            # - PolicyName: CreateAndWriteToLogStream
+            #   PolicyDocument:
+            #     Version: '2012-10-17'
+            #     Statement:
+            #       - Effect: Allow
+            #         Action:
+            #           - 'logs:CreateLogGroup'
+            #           - 'logs:CreateLogStream'
+            #           - 'logs:PutLogEvents'
+            #           - 'logs:DescribeLogStreams'
+            #         Resource:
+            #           Fn::Join:
+            #             - '/'
+            #             - - 'arn:aws:logs:${self:custom.private.region}:${self:custom.private.accountId}:log-group:/aws/lambda'
+            #               - '*'
+                      # Fn::Join:
+                      #   - ':'
+                      #   - - Fn::GetAtt: [ ToDoLogGroup, Arn ]
+                      #     - '*'
             - PolicyName: ReadFromToDo
               PolicyDocument: 
                 Version: '2012-10-17'
