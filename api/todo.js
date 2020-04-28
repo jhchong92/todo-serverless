@@ -1,5 +1,5 @@
 'use strict';
-const AJV = require('ajv');
+import AJV from 'ajv'
 const uuid = require('uuid');
 const AWS = require('aws-sdk'); 
 
@@ -19,7 +19,7 @@ const ajv = new AJV()
 ajv.addSchema(todoCreateSchema, todoCreateSchemaId)
 ajv.addSchema(todosListSchema, todosListSchemaId)
 
-module.exports.hello = async (event, context) => {
+export const hello = async (event, context) => {
   console.log('hello', context)
   return {
     statusCode: 200,
@@ -221,9 +221,11 @@ const updateTaskStatus = (userId, taskId, status) => {
     });
 }
 
-module.exports = {
-  list: api.list,
-  submit: api.submit,
-  update: api.update,
-  clearCompleted: api.clearCompleted
-}
+export const { list, submit, update, clearCompleted } = api
+// export const { }
+// module.exports = {
+//   list: api.list,
+//   submit: api.submit,
+//   update: api.update,
+//   clearCompleted: api.clearCompleted
+// }

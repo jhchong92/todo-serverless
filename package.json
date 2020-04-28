@@ -22,6 +22,15 @@
   },
   "homepage": "https://github.com/jhchong92/todo-serverless#readme",
   "devDependencies": {
-    "jest": "^25.4.0"
+    "@babel/preset-env": "^7.9.5",
+    "aws-sdk": "^2.664.0",
+    "babel-core": "^6.26.3",
+    "babel-loader": "^8.1.0",
+    "babel-preset-env": "^1.7.0",
+    "jest": "^25.4.0",
+    "serverless": "^1.68.0",
+    "serverless-webpack": "^5.3.1",
+    "webpack": "^4.43.0",
+    "webpack-node-externals": "^1.7.2"
   }
 }

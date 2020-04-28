@@ -19,13 +19,22 @@ org: jhchong92
 # You can pin your service to only deploy with a specific Serverless version
 # Check out our docs for more details
 # frameworkVersion: "=X.X.X"
+plugins:
+  - serverless-webpack
 
 custom:
   private: ${file(./private.yml)}
-
+  webpack:
+    webpackConfig: 'webpack.config.js'   # Name of webpack configuration file
+    includeModules: 
+      packagePath: './package.json'
+    packager: 'npm'   # Packager that will be used to package your external modules
+    excludeFiles: src/**/*.test.js # Provide a glob for files to ignore
+    
 provider:
   name: aws
   runtime: nodejs12.x
+  # stage: dev
 
   region: ap-southeast-1
   environment:
