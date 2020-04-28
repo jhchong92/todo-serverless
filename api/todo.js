@@ -1,5 +1,4 @@
 'use strict';
-
 const AJV = require('ajv');
 const uuid = require('uuid');
 const AWS = require('aws-sdk'); 
@@ -92,10 +91,10 @@ const api = {
       return
     }
     console.log('list', event)
-    let status = null;
-    if (event.queryStringParameters) {
-      status = event.queryStringParameters.status
-    }
+    let status = event.queryStringParameters && event.queryStringParameters.status;
+    // const user = createUserFromAuthorizer(event.requestContext.authorizer)
+    // console.log('user', user)
+    // console.log('authorizer', event.requestContext.authorizer)
     const userId = event.requestContext.authorizer.claims.sub
     console.log('userId', userId)
     listTodos(userId, status).then((todos) => {

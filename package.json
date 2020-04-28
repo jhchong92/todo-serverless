@@ -20,5 +20,8 @@
   "bugs": {
     "url": "https://github.com/jhchong92/todo-serverless/issues"
   },
-  "homepage": "https://github.com/jhchong92/todo-serverless#readme"
+  "homepage": "https://github.com/jhchong92/todo-serverless#readme",
+  "devDependencies": {
+    "jest": "^25.4.0"
+  }
 }
