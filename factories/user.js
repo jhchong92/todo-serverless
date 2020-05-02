@@ -4,9 +4,12 @@ const createUser = ({id, name, email}) => ({
   email
 })
 
-const createUserFromAuthorizer = (authorizer) => ({
-  id: authorizer.sub,
-  email: authorizer.email
-})
+const createUserFromAuthorizer = (authorizer) => {
+  const { claims } = authorizer
+  return ({ 
+    id: claims.sub,
+    email: claims.email
+  })
+} 
 
 export { createUser, createUserFromAuthorizer }

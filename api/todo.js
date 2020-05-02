@@ -1,5 +1,8 @@
 'use strict';
 import AJV from 'ajv'
+import { response, dynamoError } from './response';
+import { index as indexTodos } from '../repositories/todo'
+import { createUser, createUserFromAuthorizer } from '../factories/user';
 const uuid = require('uuid');
 const AWS = require('aws-sdk'); 
 
@@ -69,14 +72,13 @@ const impl = {
     )
   },
   successTodos: (todos) => {
-
-    return impl.response(200, JSON.stringify({
+    return response(200, JSON.stringify({
       message: 'Success',
       todos
     }))
   },
   successTodo: (todo) => {
-    return impl.response(200, JSON.stringify({
+    return response(200, JSON.stringify({
       message: 'Success',
       data: todo
     }))
@@ -85,25 +87,20 @@ const impl = {
 
 const api = {
   list: (event, context, callback) => {
-    console.log('abc');
+    console.log('authorizer', event.requestContext.authorizer);
     if (!ajv.validate(todosListSchemaId, event)) {
       callback(null, impl.clientError('LIST_TODO', todosListSchemaId, ajv.errorsText(), event))
       return
     }
-    console.log('list', event)
-    let status = event.queryStringParameters && event.queryStringParameters.status;
-    // const user = createUserFromAuthorizer(event.requestContext.authorizer)
-    // console.log('user', user)
-    // console.log('authorizer', event.requestContext.authorizer)
-    const userId = event.requestContext.authorizer.claims.sub
-    console.log('userId', userId)
-    listTodos(userId, status).then((todos) => {
-      console.log('listTodos results', todos)
-      callback(null, impl.successTodos(todos))
-    }).catch((error) => {
-      console.log('error', error)
-      callback(null, impl.dynamoError('LIST', error))
-    })
+    const status = event.queryStringParameters && event.queryStringParameters.status;
+    const user = createUserFromAuthorizer(event.requestContext.authorizer)
+    indexTodos(user, status)
+      .then((todos) => {
+        callback(null, impl.successTodos(todos))
+      })
+      .catch((error) => {
+        callback(null, dynamoError('LIST_TODO', error))
+      })
   }, 
   submit: (event, context, callback) => {
     if (!ajv.validate(todoCreateSchemaId, event)) {
