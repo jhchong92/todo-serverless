@@ -1,13 +1,22 @@
 import client from "./client";
 import { createDbParam } from "../factories/dbParam";
+import { createTodo } from "../factories/todo";
 
 const TABLE_NAME = process.env.TODO_TABLE
 
 const impl = {
-  save: () => {
-    
+  storeTodo: async (user, taskName) => {
+    const task = createTodo(user, taskName)
+    const payload = {
+      TableName: process.env.TODO_TABLE,
+      Item: task,
+    };
+    return client.put(payload).promise()
+      .then(res => {
+        return task
+      });
   },
-  index: async (user, status) => {
+  indexTodos: async (user, status) => {
     let filterExprs = 'user_id = :userId'
     const exprAttrValues = {
       ':userId': user.id
@@ -25,5 +34,5 @@ const impl = {
   }
 }
 
-export const { save, index } = impl
+export const { storeTodo, indexTodos } = impl
 

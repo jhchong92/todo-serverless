@@ -9,7 +9,7 @@
     "ajv": "^6.12.2"
   },
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -22,9 +22,11 @@
   },
   "homepage": "https://github.com/jhchong92/todo-serverless#readme",
   "devDependencies": {
+    "@babel/core": "^7.9.6",
     "@babel/preset-env": "^7.9.5",
     "aws-sdk": "^2.664.0",
     "babel-core": "^6.26.3",
+    "babel-jest": "^25.5.1",
     "babel-loader": "^8.1.0",
     "babel-preset-env": "^1.7.0",
     "jest": "^25.4.0",

@@ -1,0 +1,16 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "self": {
+    "vendor": "com.jh",
+    "name": "todo/store",
+    "version": "1.0.0"
+  },
+  "type": "object",
+  "properties": {
+    "taskName" : { "type": "string"}
+  },
+  "required": [
+    "taskName"
+  ],
+  "additionalProperties": false
+}

@@ -4,6 +4,11 @@ const createUser = ({id, name, email}) => ({
   email
 })
 
+const createUserFromEvent = (event) => {
+  const { requestContext: { authorizer } }   = event
+  return createUserFromAuthorizer(authorizer)
+}
+
 const createUserFromAuthorizer = (authorizer) => {
   const { claims } = authorizer
   return ({ 
@@ -12,4 +17,4 @@ const createUserFromAuthorizer = (authorizer) => {
   })
 } 
 
-export { createUser, createUserFromAuthorizer }
+export { createUser, createUserFromEvent, createUserFromAuthorizer }

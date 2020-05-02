@@ -1,8 +1,8 @@
 'use strict';
 import AJV from 'ajv'
 import { response, dynamoError } from './response';
-import { index as indexTodos } from '../repositories/todo'
-import { createUser, createUserFromAuthorizer } from '../factories/user';
+import { indexTodos, storeTodo } from '../repositories/todo'
+import { createUser, createUserFromEvent, createUserFromAuthorizer } from '../factories/user';
 const uuid = require('uuid');
 const AWS = require('aws-sdk'); 
 
@@ -12,14 +12,17 @@ const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
 const makeSchemaId = (schema) => `${schema.self.vendor}/${schema.self.name}/${schema.self.version}`
 
-const todoCreateSchema = require('../schemas/todo-create-schema.json')
-const todoCreateSchemaId = makeSchemaId(todoCreateSchema)
+const todoScoreRequestSchema = require('../schemas/todo-store-request-schema.json')
+const todoStoreRequestSchemaId = makeSchemaId(todoScoreRequestSchema)
+const todoScoreSchema = require('../schemas/todo-store-schema.json')
+const todoStoreSchemaId = makeSchemaId(todoScoreSchema)
 
 const todosListSchema = require('../schemas/todos-list-schema.json')
 const todosListSchemaId = makeSchemaId(todosListSchema)
 
 const ajv = new AJV()
-ajv.addSchema(todoCreateSchema, todoCreateSchemaId)
+ajv.addSchema(todoScoreRequestSchema, todoStoreRequestSchemaId)
+ajv.addSchema(todoScoreSchema, todoStoreSchemaId)
 ajv.addSchema(todosListSchema, todosListSchemaId)
 
 export const hello = async (event, context) => {
@@ -103,24 +106,35 @@ const api = {
       })
   }, 
   submit: (event, context, callback) => {
-    if (!ajv.validate(todoCreateSchemaId, event)) {
-      callback(null, impl.clientError('SUBMIT_TODO', todoCreateSchemaId, ajv.errorsText(), event))
+    if (!ajv.validate(todoStoreRequestSchemaId, event)) {
+      callback(null, impl.clientError('SUBMIT_TODO', todoStoreRequestSchemaId, ajv.errorsText(), event))
       return;
     }
-    const body = JSON.parse(event.body);
-    const taskName = body.taskName
-    
-    if (typeof taskName !== 'string') {
-      callback(null, impl.validationError());
+    const user = createUserFromEvent(event)
+    const body = JSON.parse(event.body)
+    if (!ajv.validate(todoStoreSchemaId, body)) {
+      callback(null, impl.clientError('SUBMIT_TODO', todoStoreSchemaId, ajv.errorsText(), event))
+      return;
     }
-    const userId = event.requestContext.authorizer.claims.sub
-    submitTask(createTask(taskName, userId))
-    .then((todo) => {
-      callback(null, impl.successTodo(todo))
-    })
-    .catch((error) => {
-      callback(null, impl.dynamoError('SUBMIT', error))
-    })
+    const taskName = body.taskName
+
+    storeTodo(user, taskName)
+      .then((todo) => {
+        callback(null, impl.successTodo(todo))
+      })
+      .catch((error) => {
+        callback(null, impl.dynamoError('SUBMIT', error))
+      })
+
+    // const taskName = body.taskName
+    // const userId = event.requestContext.authorizer.claims.sub
+    // submitTask(createTask(taskName, userId))
+    //   .then((todo) => {
+    //     callback(null, impl.successTodo(todo))
+    //   })
+    //   .catch((error) => {
+    //     callback(null, impl.dynamoError('SUBMIT', error))
+    //   })
   },
   update: (event, context, callback) => {
     const taskId = event.pathParameters.taskId;

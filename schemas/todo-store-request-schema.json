@@ -2,24 +2,19 @@
   "$schema": "http://json-schema.org/draft-07/schema",
   "self": {
     "vendor": "com.jh",
-    "name": "todo/create",
+    "name": "todo/store-request",
     "version": "1.0.0"
   },
   "type": "object",
   "properties": {
     "path": { "type": "string", "pattern": "^/todos$"},
     "httpMethod": { "type": "string", "pattern": "^POST$"},
-    "body": {
-      "type": "object",
-      "properties": {
-        "taskName" : { "type": "string"}
-      },
-      "additionalProperties": false
-    }
+    "body": { "type": "string" }
   },
   "required": [
     "path",
-    "httpMethod"
+    "httpMethod",
+    "body"
   ],
   "additionalProperties": true
 }
