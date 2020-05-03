@@ -1,14 +1,11 @@
 'use strict';
 import AJV from 'ajv'
-import { response, dynamoError } from './response';
-import { indexTodos, storeTodo } from '../repositories/todo'
-import { createUser, createUserFromEvent, createUserFromAuthorizer } from '../factories/user';
-const uuid = require('uuid');
+import { response, dynamoError, serverError, successResponse } from './response';
+import { indexTodos, storeTodo, updateTodo, clearCompletedTodos } from '../repositories/todo'
+import { createUserFromEvent, createUserFromAuthorizer } from '../factories/user';
 const AWS = require('aws-sdk'); 
 
 AWS.config.setPromisesDependency(require('bluebird'));
-
-const dynamoDb = new AWS.DynamoDB.DocumentClient();
 
 const makeSchemaId = (schema) => `${schema.self.vendor}/${schema.self.name}/${schema.self.version}`
 
@@ -20,10 +17,14 @@ const todoStoreSchemaId = makeSchemaId(todoScoreSchema)
 const todosListSchema = require('../schemas/todos-list-schema.json')
 const todosListSchemaId = makeSchemaId(todosListSchema)
 
+const todoUpdateRequestSchema = require('../schemas/todo-update-request-schema.json')
+const todoUpdateRequestSchemaId = makeSchemaId(todoUpdateRequestSchema)
+
 const ajv = new AJV()
 ajv.addSchema(todoScoreRequestSchema, todoStoreRequestSchemaId)
 ajv.addSchema(todoScoreSchema, todoStoreSchemaId)
 ajv.addSchema(todosListSchema, todosListSchemaId)
+ajv.addSchema(todoUpdateRequestSchema, todoUpdateRequestSchemaId)
 
 export const hello = async (event, context) => {
   console.log('hello', context)
@@ -41,39 +42,6 @@ export const hello = async (event, context) => {
 };
 
 const impl = {
-  response: (statusCode, body) => ({
-    statusCode,
-    headers: {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Credentials': true,
-      'Access-Control-Allow-Methods': 'GET, POST, PUT, PATCH, POST, DELETE, OPTIONS'
-    },
-    body
-  }),
-  successResponse: (message) => {
-    return impl.response(200, JSON.stringify({
-      message
-    }))
-  },
-  serverError: (message) => {
-    return impl.response(500, JSON.stringify({
-      message 
-    }))
-  },
-  dynamoError: (method, err) => {
-    console.log(`${method} - dynamo error ${err}`)
-    return impl.serverError('Something went wrong at server')
-  },
-  validationError: () => {
-    return impl.response(400, JSON.stringify({
-      message: 'Validation error'
-    }))
-  },
-  clientError: (method, schemaId, ajvErrors, event) => {
-    return impl.response(400, 
-      `${method} Invalid Request could not validate request to schema ${schemaId}. Errors: '${ajvErrors}' found in event: '${JSON.stringify(event)}' `  
-    )
-  },
   successTodos: (todos) => {
     return response(200, JSON.stringify({
       message: 'Success',
@@ -95,8 +63,8 @@ const api = {
       callback(null, impl.clientError('LIST_TODO', todosListSchemaId, ajv.errorsText(), event))
       return
     }
-    const status = event.queryStringParameters && event.queryStringParameters.status;
-    const user = createUserFromAuthorizer(event.requestContext.authorizer)
+    const user = createUserFromEvent(event)
+    const status = event.queryStringParameters && event.queryStringParameters.status
     indexTodos(user, status)
       .then((todos) => {
         callback(null, impl.successTodos(todos))
@@ -126,117 +94,34 @@ const api = {
         callback(null, impl.dynamoError('SUBMIT', error))
       })
 
-    // const taskName = body.taskName
-    // const userId = event.requestContext.authorizer.claims.sub
-    // submitTask(createTask(taskName, userId))
-    //   .then((todo) => {
-    //     callback(null, impl.successTodo(todo))
-    //   })
-    //   .catch((error) => {
-    //     callback(null, impl.dynamoError('SUBMIT', error))
-    //   })
   },
   update: (event, context, callback) => {
-    const taskId = event.pathParameters.taskId;
-    const status = event.pathParameters.status;
+    if (!ajv.validate(todoUpdateRequestSchemaId, event)) {
+      callback(null, impl.clientError('UPDATE_TODO', todoUpdateRequestSchemaId, ajv.errorsText(), event))
+      return
+    }
+    const { todoId, status } = event.pathParameters;
     
-    const userId = event.requestContext.authorizer.claims.sub
-    updateTaskStatus(userId, taskId, status)
-    .then((todo) => {
-      callback(null, impl.successTodo(todo))
-    })
-    .catch((err) => {
-      callback(null, impl.dynamoError('UPDATE', err))
-    })
+    const user = createUserFromEvent(event)
+    // const userId = event.requestContext.authorizer.claims.sub
+    updateTodo(todoId, user, { status })
+      .then((todo) => {
+        callback(null, impl.successTodo(todo))
+      })
+      .catch((err) => {
+        callback(null, serverError('UPDATE_TODO', err))
+      })
   },
   clearCompleted: (event, context, callback) => {
-    const userId = event.requestContext.authorizer.claims.sub
-    listTodos(userId, 2).then((tasks) => tasks.map((task) => updateTaskStatus(userId, task.id, 3)))
-    .then((tasks) => {
-      console.log('tasks', tasks)
-      callback(null, impl.successResponse('Success'))
-
-    })
-    .catch((err) => {
-      callback(null, impl.serverError(err))
-    })
+    const user = createUserFromEvent(event)
+    clearCompletedTodos(user)
+      .then(() => {
+        callback(null, successResponse('Success'))
+      })
+      .catch((err) => {
+        callback(null, serverError('CLEAR_COMPLETED', err))
+      })
   }
-}
-
-const listTodos = (userId, status) => {
-  console.log('listTodos', userId, status);
-  
-  const payload = {
-    TableName: process.env.TODO_TABLE,
-  }
-  let filterExpression = 'user_id = :userId'
-  let expressionAttributeValues = {
-    ':userId': userId
-  }
-  if (status) {
-    filterExpression += ' AND task_status = :s'
-    Object.assign(expressionAttributeValues, {
-      ':s': parseInt(status)
-    })
-  }
-  Object.assign(payload, {
-    FilterExpression: filterExpression,
-    ExpressionAttributeValues: expressionAttributeValues
-  })
-  return dynamoDb.scan(payload).promise()
-  .then (result => result.Items)
-}
-
-
-const submitTask = task => {
-  console.log('Submitting task');
-  const payload = {
-    TableName: process.env.TODO_TABLE,
-    Item: task,
-  };
-  return dynamoDb.put(payload).promise()
-    .then(res => {
-      return task
-    });
-};
-
-const createTask = (taskName, userId) => {
-  return {
-    id: uuid.v1(),
-    user_id: userId,
-    task_name: taskName,
-    task_status: 1
-  }
-}
-
-
-const updateTaskStatus = (userId, taskId, status) => {
-  console.log('updateTask', taskId, status)
-  const payload = {
-    TableName: process.env.TODO_TABLE,
-    Key: {
-      'id': taskId
-    },
-    UpdateExpression: 'SET task_status = :t',
-    ConditionExpression: 'user_id = :userId',
-    ExpressionAttributeValues: {
-      ':t' : parseInt(status),
-      ':userId': userId
-    },
-    ReturnValues: "ALL_NEW"
-  }
-  return dynamoDb.update(payload).promise()
-    .then((res) => {
-      console.log('update dynamo', res)
-      return res.Attributes
-    });
 }
 
 export const { list, submit, update, clearCompleted } = api
-// export const { }
-// module.exports = {
-//   list: api.list,
-//   submit: api.submit,
-//   update: api.update,
-//   clearCompleted: api.clearCompleted
-// }

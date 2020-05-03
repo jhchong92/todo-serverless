@@ -98,7 +98,7 @@ functions:
       Fn::GetAtt: [ ToDoWriter, Arn ]
     events:
       - http:
-          path: todos/{taskId}/status/{status}
+          path: todos/{todoId}/status/{status}
           method: put         
           cors: true 
           authorizer:

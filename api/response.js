@@ -13,9 +13,10 @@ const impl = {
       message
     }))
   },
-  serverError: (message) => {
+  serverError: (method, err) => {
+    console.log(`${method} - server error ${err}`)
     return impl.response(500, JSON.stringify({
-      message 
+      err
     }))
   },
   dynamoError: (method, err) => {

@@ -1,0 +1,23 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema",
+  "self": {
+    "vendor": "com.jh",
+    "name": "todos/update-request",
+    "version": "1.0.0"
+  },
+  "type": "object",
+  "properties": {
+    "pathParameters": {
+      "type": "object",
+      "properties": {
+        "todoId" : { "type": "string", "format": "uuid" },
+        "status" : { "type": "string", "pattern": "^\\d+$" }
+      },
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "pathParameters"
+  ],
+  "additionalProperties": true
+}

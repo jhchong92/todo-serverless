@@ -31,8 +31,28 @@ const impl = {
     console.log('db scan params', param)
     return client.scan(param).promise()
     .then(result => result.Items)
+  },
+  updateTodo: async (id, user, {status}) => {
+    const payload = {
+      TableName: process.env.TODO_TABLE,
+      Key: {
+        'id': id
+      },
+      UpdateExpression: 'SET task_status = :t',
+      ConditionExpression: 'user_id = :userId',
+      ExpressionAttributeValues: {
+        ':t' : parseInt(status),
+        ':userId': user.id
+      },
+      ReturnValues: "ALL_NEW"
+    }
+    return client.update(payload).promise()
+      .then((res) => {
+        console.log('update dynamo', res)
+        return res.Attributes
+      })
   }
 }
 
-export const { storeTodo, indexTodos } = impl
+export const { storeTodo, indexTodos, updateTodo } = impl
 
