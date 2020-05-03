@@ -2,44 +2,30 @@
 import AJV from 'ajv'
 import { response, dynamoError, serverError, successResponse } from './response';
 import { indexTodos, storeTodo, updateTodo, clearCompletedTodos } from '../repositories/todo'
-import { createUserFromEvent, createUserFromAuthorizer } from '../factories/user';
+import { createUserFromEvent } from '../factories/user';
 const AWS = require('aws-sdk'); 
 
 AWS.config.setPromisesDependency(require('bluebird'));
 
 const makeSchemaId = (schema) => `${schema.self.vendor}/${schema.self.name}/${schema.self.version}`
 
+const ajv = new AJV()
+
 const todoScoreRequestSchema = require('../schemas/todo-store-request-schema.json')
 const todoStoreRequestSchemaId = makeSchemaId(todoScoreRequestSchema)
+ajv.addSchema(todoScoreRequestSchema, todoStoreRequestSchemaId)
+
 const todoScoreSchema = require('../schemas/todo-store-schema.json')
 const todoStoreSchemaId = makeSchemaId(todoScoreSchema)
+ajv.addSchema(todoScoreSchema, todoStoreSchemaId)
 
 const todosListSchema = require('../schemas/todos-list-schema.json')
 const todosListSchemaId = makeSchemaId(todosListSchema)
+ajv.addSchema(todosListSchema, todosListSchemaId)
 
 const todoUpdateRequestSchema = require('../schemas/todo-update-request-schema.json')
 const todoUpdateRequestSchemaId = makeSchemaId(todoUpdateRequestSchema)
-
-const ajv = new AJV()
-ajv.addSchema(todoScoreRequestSchema, todoStoreRequestSchemaId)
-ajv.addSchema(todoScoreSchema, todoStoreSchemaId)
-ajv.addSchema(todosListSchema, todosListSchemaId)
 ajv.addSchema(todoUpdateRequestSchema, todoUpdateRequestSchemaId)
-
-export const hello = async (event, context) => {
-  console.log('hello', context)
-  return {
-    statusCode: 200,
-    body: JSON.stringify(
-      {
-        message: 'Go Serverless v1.0! Your function executed successfully!',
-        input: event,
-      },
-      null,
-      2
-    ),
-  };
-};
 
 const impl = {
   successTodos: (todos) => {

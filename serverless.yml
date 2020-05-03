@@ -49,16 +49,6 @@ provider:
   #     Resource: 'arn:aws:logs:${self:custom.private.region}:${self:custom.private.accountId}:log-group:/aws/lambda/${self:service}-${opt:stage}-*'
 
 functions:
-  hello:
-    handler: api/todo.hello
-    events:
-     - http:
-         path: todo/hello
-         method: get
-         authorizer:
-          type: COGNITO_USER_POOLS
-          authorizerId:
-            Ref: ApiGatewayAuthorizer
   listTodos:
     handler: api/todo.list
     memorySize: 128
