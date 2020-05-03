@@ -1,5 +1,4 @@
 import client from "./client";
-import { createDbParam } from "../factories/dbParam";
 import { createTodo } from "../factories/todo";
 
 const TABLE_NAME = process.env.TODO_TABLE
@@ -27,7 +26,11 @@ const impl = {
         ':s': parseInt(status)
       })
     }
-    const param = createDbParam(TABLE_NAME, filterExprs, exprAttrValues)
+    const param = {
+      TableName: TABLE_NAME,
+      FilterExpression: filterExprs,
+      ExpressionAttributeValues: exprAttrValues
+    }
     console.log('db scan params', param)
     return client.scan(param).promise()
     .then(result => result.Items)
@@ -51,8 +54,15 @@ const impl = {
         console.log('update dynamo', res)
         return res.Attributes
       })
+  },
+  clearCompletedTodos: async (user) => {
+    impl.indexTodos(user, 2)
+      .then((todos) => todos.map((todo) => impl.updateTodo(todo.id, user, { status: 3})))
+      .then((res) => {
+        console.log('clearCompleted', res)
+      })
   }
 }
 
-export const { storeTodo, indexTodos, updateTodo } = impl
+export const { storeTodo, indexTodos, updateTodo, clearCompletedTodos } = impl
 
